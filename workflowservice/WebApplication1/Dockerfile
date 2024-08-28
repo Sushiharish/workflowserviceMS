@@ -1,29 +1,20 @@
-# Use the official ASP.NET Core runtime as a base image
+# Use the ASP.NET Core SDK image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 
-# Use the official .NET SDK image for building the application
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-
-# Copy the project file and restore any dependencies
 COPY ["WebApplication1/WebApplication1.csproj", "WebApplication1/"]
 RUN dotnet restore "WebApplication1/WebApplication1.csproj"
-
-# Copy the entire application
 COPY . .
-
-# Publish the application to the /app/publish directory
 WORKDIR "/src/WebApplication1"
 RUN dotnet build "WebApplication1.csproj" -c Release -o /app/build
+
+FROM build AS publish
 RUN dotnet publish "WebApplication1.csproj" -c Release -o /app/publish
 
-# Use the base image and copy the published output from the build stage
 FROM base AS final
 WORKDIR /app
-COPY --from=build /app/publish .
-
-# Define the entry point for the container
+COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "WebApplication1.dll"]
